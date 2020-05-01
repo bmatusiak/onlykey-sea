@@ -8,7 +8,7 @@ define(function(require, exports, module) {
             htmlLog(text);
     };
 
-    var nacl =  require("nacl");
+    var nacl = require("nacl");
     var forge = require("forge");
     window.nacl = nacl;
     window.forge = forge;
@@ -53,7 +53,7 @@ define(function(require, exports, module) {
         const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); // convert bytes to hex string
         return hashHex;
     }
-    
+
     async function digestBuff(buff) {
         const msgUint8 = buff;
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
@@ -101,7 +101,7 @@ define(function(require, exports, module) {
         }
 
         // `is_extension_request` expects at least 16 bytes of data
-        const data_pad = data.length < 16 ? 16 - data.length: 0;
+        const data_pad = data.length < 16 ? 16 - data.length : 0;
         var array = new Uint8Array(offset + data.length + data_pad);
 
         array[0] = cmd & 0xff;
@@ -153,7 +153,8 @@ define(function(require, exports, module) {
             data = signature.slice(1, signature.length);
             if (signature.length < 73 && bytes2string(data.slice(0, 9)) == 'UNLOCKEDv') {
                 // Reset shared secret and start over
-            } else if (signature.length < 73 && bytes2string(data.slice(0, 6)) == 'Error ') {
+            }
+            else if (signature.length < 73 && bytes2string(data.slice(0, 6)) == 'Error ') {
                 // Something went wrong, read the ascii response and display to user
                 var msgtext = data.slice(0, getstringlen(data));
                 const btmsg = `${bytes2string(msgtext)}. Refresh this page and try again.`;
@@ -162,22 +163,26 @@ define(function(require, exports, module) {
                 //button.classList.add('error');
                 _setStatus('finished');
                 throw new Error(bytes2string(msgtext));
-            } else if (window._status === 'waiting_ping' || window._status === 'done_challenge') {
+            }
+            else if (window._status === 'waiting_ping' || window._status === 'done_challenge') {
                 // got data
                 encrypted_data = data;
                 _setStatus('finished');
             }
-        } else if (error_code == ctap_error_codes['CTAP2_ERR_NO_OPERATION_PENDING']) {
+        }
+        else if (error_code == ctap_error_codes['CTAP2_ERR_NO_OPERATION_PENDING']) {
             // No data received, data has already been retreived or wiped due to 5 second timeout
 
             //button.textContent = 'no data received';
             _setStatus('finished');
             throw new Error('no data received');
 
-        } else if (error_code == ctap_error_codes['CTAP2_ERR_USER_ACTION_PENDING']) {
+        }
+        else if (error_code == ctap_error_codes['CTAP2_ERR_USER_ACTION_PENDING']) {
             // Waiting for user to press button or enter challenge
             log('CTAP2_ERR_USER_ACTION_PENDING');
-        } else if (error_code == ctap_error_codes['CTAP2_ERR_OPERATION_PENDING']) {
+        }
+        else if (error_code == ctap_error_codes['CTAP2_ERR_OPERATION_PENDING']) {
             // Waiting for user to press button or enter challenge
             log('CTAP2_ERR_OPERATION_PENDING');
         }
@@ -239,7 +244,8 @@ define(function(require, exports, module) {
             if (error.name == 'NS_ERROR_ABORT' || error.name == 'AbortError' || error.name == 'InvalidStateError') {
                 _setStatus('done_challenge');
                 return 1;
-            } else if (error.name == 'NotAllowedError' && os == 'Windows') {
+            }
+            else if (error.name == 'NotAllowedError' && os == 'Windows') {
                 // Win 10 1903 issue
                 return 1;
             }
@@ -354,7 +360,7 @@ define(function(require, exports, module) {
         }
         var val = number.toString(16).toUpperCase();
         if (val.length == 1)
-            val = "0"+val;
+            val = "0" + val;
 
         return val;
     }
@@ -379,10 +385,10 @@ define(function(require, exports, module) {
 
     function arbuf2sha256(hexstr) {
         // We transform the string into an arraybuffer.
-        var buffer = new Uint8Array(hexstr.match(/[\da-f]{2}/gi).map(function (h) {
+        var buffer = new Uint8Array(hexstr.match(/[\da-f]{2}/gi).map(function(h) {
             return parseInt(h, 16)
         }));
-        return crypto.subtle.digest("SHA-256", buffer).then(function (hash) {
+        return crypto.subtle.digest("SHA-256", buffer).then(function(hash) {
             return arbuf2hex(hash);
         });
     }
@@ -429,10 +435,10 @@ define(function(require, exports, module) {
     }
 
     /**
-    * Perform AES_256_GCM decryption using NACL shared secret
-    * @param {Array} encrypted
-    * @return {Array}
-    */
+     * Perform AES_256_GCM decryption using NACL shared secret
+     * @param {Array} encrypted
+     * @return {Array}
+     */
     function aesgcm_decrypt(encrypted) {
         return new Promise(resolve => {
             forge.options.usePureJavaScript = true;
@@ -462,10 +468,10 @@ define(function(require, exports, module) {
     }
 
     /**
-    * Perform AES_256_GCM encryption using NACL shared secret
-    * @param {Array} plaintext
-    * @return {Array}
-    */
+     * Perform AES_256_GCM encryption using NACL shared secret
+     * @param {Array} plaintext
+     * @return {Array}
+     */
     function aesgcm_encrypt(plaintext) {
         return new Promise(resolve => {
             forge.options.usePureJavaScript = true;
@@ -486,27 +492,31 @@ define(function(require, exports, module) {
             cipher.finish();
             var ciphertext = cipher.output;
             ciphertext = ciphertext.toHex(),
-            resolve(ciphertext.match(/.{2}/g).map(hexStrToDec))
+                resolve(ciphertext.match(/.{2}/g).map(hexStrToDec))
         });
     }
 
     function getOS() {
         var userAgent = window.navigator.userAgent,
-        platform = window.navigator.platform,
-        macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'],
-        windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'],
-        iosPlatforms = ['iPhone', 'iPad', 'iPod'],
-        os = null;
+            platform = window.navigator.platform,
+            macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'],
+            windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'],
+            iosPlatforms = ['iPhone', 'iPad', 'iPod'],
+            os = null;
 
         if (macosPlatforms.indexOf(platform) !== -1) {
             os = 'Mac OS';
-        } else if (iosPlatforms.indexOf(platform) !== -1) {
+        }
+        else if (iosPlatforms.indexOf(platform) !== -1) {
             os = 'iOS';
-        } else if (windowsPlatforms.indexOf(platform) !== -1) {
+        }
+        else if (windowsPlatforms.indexOf(platform) !== -1) {
             os = 'Windows';
-        } else if (/Android/.test(userAgent)) {
+        }
+        else if (/Android/.test(userAgent)) {
             os = 'Android';
-        } else if (!os && /Linux/.test(platform)) {
+        }
+        else if (!os && /Linux/.test(platform)) {
             os = 'Linux';
         }
 
@@ -565,7 +575,7 @@ define(function(require, exports, module) {
 
                 okPub = response.slice(21, 53);
                 sharedsec = nacl.box.before(Uint8Array.from(okPub), appKey.secretKey);
-                OKversion = response[19] == 99 ? 'Color': 'Original';
+                OKversion = response[19] == 99 ? 'Color' : 'Original';
                 var FWversion = bytes2string(response.slice(8, 20));
 
                 msg("OnlyKey " + OKversion + " " + FWversion + " connection established\n");
@@ -594,7 +604,7 @@ define(function(require, exports, module) {
             var message = [255, 255, 255, 255, OKCONNECT]; //Add header and message type
             if (!optional_d) {
                 optional_d = new Uint8Array(32); // all 0s
-            } 
+            }
             // optional_d is optional data to include in key derivation, this must be 32 bytes
             // TODO add checking, if not 32 bytes pad data with 0s
             Array.prototype.push.apply(message, optional_d);
@@ -638,13 +648,14 @@ define(function(require, exports, module) {
                 okPub = response.slice(21, 53);
 
                 // Public ECC key will be an uncompressed ECC key, 65 bytes for P256, 32 bytes for NACL/CURVE25519 padded with 0s
-                if (keytype ==0 || okeytype ==3) {
-                    var sharedPub = response.slice(response.length - 65, response.length-33);
-                } else {
+                if (keytype == 0 || keytype == 3) {
+                    var sharedPub = response.slice(response.length - 65, response.length - 33);
+                }
+                else {
                     var sharedPub = response.slice(response.length - 65, response.length);
                 }
                 // sharedsec = nacl.box.before(Uint8Array.from(okPub), appKey.secretKey);
-                OKversion = response[19] == 99 ? 'Color': 'Original';
+                OKversion = response[19] == 99 ? 'Color' : 'Original';
                 var FWversion = bytes2string(response.slice(8, 20));
 
                 msg("OnlyKey Derive Public Key Complete");
@@ -690,7 +701,7 @@ define(function(require, exports, module) {
             var message = [255, 255, 255, 255, OKCONNECT]; //Add header and message type
             if (!optional_d) {
                 optional_d = new Uint8Array(32); // all 0s
-            } 
+            }
             // optional_d is optional data to include in key derivation, this must be 32 bytes
             // TODO add checking, if not 32 bytes pad data with 0s
             Array.prototype.push.apply(message, optional_d);
@@ -725,21 +736,22 @@ define(function(require, exports, module) {
                 //sharedsec = nacl.box.before(Uint8Array.from(okPub), appKey.secretKey);
 
                 // Public ECC key will be an uncompressed ECC key, 65 bytes for P256, 32 bytes for NACL/CURVE25519 padded with 0s
-                if (keytype ==0 || keytype ==3) {
-                    var sharedPub = response.slice(response.length - 65, response.length-33);
-                } else {
+                if (keytype == 0 || keytype == 3) {
+                    var sharedPub = response.slice(response.length - 65, response.length - 33);
+                }
+                else {
                     var sharedPub = response.slice(response.length - 65, response.length);
                 }
                 //Private ECC key will be 32 bytes for all supported ECC key types
                 sharedsec = response.slice(response.length - 32, response.length);
-                OKversion = response[19] == 99 ? 'Color': 'Original';
+                OKversion = response[19] == 99 ? 'Color' : 'Original';
                 var FWversion = bytes2string(response.slice(8, 20));
 
                 msg("OnlyKey Shared Secret Completed\n");
                 $onStatus("OnlyKey Shared Secret Completed ");
 
                 var sha256Hash = await digestBuff(Uint8Array.from(sharedsec));
-                
+
                 //sha256(sharedsec).then((key) => {
                 msg("sharedsec (" + sharedsec.length + ") => " + sharedsec);
                 msg("sharedsec -> bytes2b64 => " + bytes2b64_B(sharedsec));
@@ -756,7 +768,7 @@ define(function(require, exports, module) {
 
 
     var connected = false;
-    
+
     module.exports = {
         connect: function(callback, _onStatus) {
             if (_onStatus)
