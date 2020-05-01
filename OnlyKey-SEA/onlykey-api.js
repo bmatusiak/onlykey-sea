@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-
+    /* global $ TextEncoder */
     var onConnection = null;
     var onStatus = null;
     var $onStatus = function(text) {
@@ -395,7 +395,7 @@ define(function(require, exports, module) {
 
     function mkchallenge(challenge) {
         var s = [];
-        for (i = 0; i < 32; i++) s[i] = String.fromCharCode(challenge[i]);
+        for (var i = 0; i < 32; i++) s[i] = String.fromCharCode(challenge[i]);
         return u2f_b64(s.join());
     }
 
@@ -444,7 +444,7 @@ define(function(require, exports, module) {
             forge.options.usePureJavaScript = true;
             var key = sha256(sharedsec); //AES256 key sha256 hash of shared secret
             log("Key", key);
-            var iv = IntToByteArray(counter);
+            var iv = IntToByteArray(counter);//<-- counter is undeclared
             while (iv.length < 12) iv.push(0);
             iv = Uint8Array.from(iv);
             log("IV", iv);
@@ -477,7 +477,7 @@ define(function(require, exports, module) {
             forge.options.usePureJavaScript = true;
             var key = sha256(sharedsec); //AES256 key sha256 hash of shared secret
             log("Key", key);
-            var iv = IntToByteArray(counter);
+            var iv = IntToByteArray(counter);//<-- counter is undeclared
             while (iv.length < 12) iv.push(0);
             iv = Uint8Array.from(iv);
             log("IV", iv);
@@ -547,7 +547,7 @@ define(function(require, exports, module) {
         var delay = 0;
 
         setTimeout(async function() {
-            console.log("-------------------------------------------")
+            console.log("-------------------------------------------");
             msg("Requesting OnlyKey Secure Connection");
             $onStatus("Requesting OnlyKey Secure Connection");
 
@@ -594,7 +594,7 @@ define(function(require, exports, module) {
         var delay = 0;
 
         setTimeout(async function() {
-            console.log("-------------------------------------------")
+            console.log("-------------------------------------------");
             msg("Requesting OnlyKey Derive Public Key");
             $onStatus("Requesting OnlyKey Derive Public Key");
 
@@ -692,7 +692,7 @@ define(function(require, exports, module) {
         }
 
         setTimeout(async function() {
-            console.log("-------------------------------------------")
+            console.log("-------------------------------------------");
             msg("Requesting OnlyKey Shared Secret");
             $onStatus("Requesting OnlyKey Shared Secret");
 
