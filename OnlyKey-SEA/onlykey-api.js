@@ -591,7 +591,14 @@ define(function(require, exports, module) {
             var cmd = OKCONNECT;
 
             //message Header Starting with command
-            var message = [255, 255, 255, 255, OKCONNECT];
+            var message = [255, 255, 255, 255, OKCONNECT]; //Add header and message type
+            if (!optional_d) {
+                optional_d = new Uint8Array(32); // all 0s
+            } 
+            // optional_d is optional data to include in key derivation, this must be 32 bytes
+            // TODO add checking, if not 32 bytes pad data with 0s
+            Array.prototype.push.apply(message, optional_d);
+            var encryptedkeyHandle = Uint8Array.from(message); // Not encrypted currently
 
             //provide time for the call
             // var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
@@ -619,7 +626,7 @@ define(function(require, exports, module) {
             //#define NO_ENCRYPT_RESP 0
             //#define ENCRYPT_RESP 1
 
-            await ctaphid_via_webauthn(cmd, optype, keytype, enc_resp, Uint8Array.from(message), 6000).then(async(response) => {
+            await ctaphid_via_webauthn(cmd, optype, keytype, enc_resp, encryptedkeyHandle, 6000).then(async(response) => {
 
                 if (!response) {
                     msg("Problem Derive Public Key on onlykey");
@@ -667,7 +674,7 @@ define(function(require, exports, module) {
 
     }
 
-    function onlykey_derive_shared_secret(pubkey, keytype, enc_resp, cb) {
+    function onlykey_derive_shared_secret(pubkey, optional_d, keytype, enc_resp, cb) {
         var delay = 0;
         if (OKversion == 'Original') {
             delay = delay * 4;
@@ -681,6 +688,12 @@ define(function(require, exports, module) {
             var cmd = OKCONNECT;
 
             var message = [255, 255, 255, 255, OKCONNECT]; //Add header and message type
+            if (!optional_d) {
+                optional_d = new Uint8Array(32); // all 0s
+            } 
+            // optional_d is optional data to include in key derivation, this must be 32 bytes
+            // TODO add checking, if not 32 bytes pad data with 0s
+            Array.prototype.push.apply(message, optional_d);
             Array.prototype.push.apply(message, pubkey);
             var encryptedkeyHandle = Uint8Array.from(message); // Not encrypted currently
 
