@@ -580,7 +580,7 @@ define(function(require, exports, module) {
 
     }
 
-    function onlykey_derive_public_key(keytype, enc_resp, cb) {
+    function onlykey_derive_public_key(optional_d, keytype, enc_resp, cb) {
         var delay = 0;
 
         setTimeout(async function() {
@@ -769,11 +769,11 @@ define(function(require, exports, module) {
         },
         derive_public_key: function(callback) {
             if (connected)
-                onlykey_derive_public_key(1, 0, callback);
+                onlykey_derive_public_key(null, 1, 0, callback);
         },
         derive_shared_secret: function(pubkey, callback) {
             if (connected)
-                onlykey_derive_shared_secret(pubkey, 1, 0, callback);
+                onlykey_derive_shared_secret(pubkey, null, 1, 0, callback);
         },
         bytes2b64: bytes2b64,
         b642bytes: b642bytes
