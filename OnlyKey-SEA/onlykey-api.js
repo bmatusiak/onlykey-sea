@@ -72,6 +72,13 @@ define(function(require, exports, module) {
         const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); // convert bytes to hex string
         return hashHex;
     }
+    
+    async function digestArray(buff) {
+        const msgUint8 = buff;
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer)); // convert buffer to byte array
+        return hashArray;
+    }
 
     function buf2hex(buffer) {
         // buffer is an ArrayBuffer
@@ -612,7 +619,7 @@ define(function(require, exports, module) {
                 OKversion = response[19] == 99 ? 'Color' : 'Original';
                 var FWversion = bytes2string(response.slice(8, 20));
 
-                msg("message -> " + message)
+                //msg("message -> " + message)
                 msg("OnlyKey " + OKversion + " " + FWversion + " connection established\n");
                 $onStatus("OnlyKey " + FWversion + " Connection Established");
 
@@ -625,39 +632,44 @@ define(function(require, exports, module) {
 
     }
 
-    function onlykey_derive_public_key(optional_d, keytype, enc_resp, cb) {
+    function onlykey_derive_public_key(additional_d, keytype, enc_resp, cb) {
         var delay = 0;
 
         setTimeout(async function() {
             console.log("-------------------------------------------");
             msg("Requesting OnlyKey Derive Public Key");
             $onStatus("Requesting OnlyKey Derive Public Key");
-
+            
             var cmd = OKCONNECT;
-
-            //message Header Starting with command
-            var message = [255, 255, 255, 255, OKCONNECT]; //Add header and message type
-            Array.prototype.push.apply(message, [0]);
-            if (!optional_d) {
-                optional_d = new Uint8Array(32); // all 0s
+            //Add header and message type
+            var message = [255, 255, 255, 255, OKCONNECT]; 
+            
+            //Add current epoch time
+            var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
+            var timePart = currentEpochTime.match(/.{2}/g).map(hexStrToDec);
+            Array.prototype.push.apply(message, timePart);
+            
+            //Add transit pubkey
+            appKey = nacl.box.keyPair();
+            Array.prototype.push.apply(message, appKey.publicKey);
+            
+            //Add Browser and OS codes
+            var env = [browser.charCodeAt(0), os.charCodeAt(0)];
+            Array.prototype.push.apply(message, env);
+            
+            //Add additional data for key derivation
+            if (!additional_d) {
+                // SHA256 hash of empty buffer
+                var dataHash = await digestArray(Uint8Array.from(new Uint8Array(32)));
+            } else {
+                // SHA256 hash of input data
+                var dataHash = await digestArray(Uint8Array.from(additional_d));
             }
-            // optional_d is optional data to include in key derivation, this must be 32 bytes
-            // TODO add checking, if not 32 bytes pad data with 0s
-            Array.prototype.push.apply(message, optional_d);
-            var encryptedkeyHandle = Uint8Array.from(message); // Not encrypted currently
-
-                msg("message -> " + encryptedkeyHandle)
-            //provide time for the call
-            // var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
-            // var timePart = currentEpochTime.match(/.{2}/g).map(hexStrToDec);
-            // Array.prototype.push.apply(message, timePart);
-
-            //pubkey_derive_data
-            // Array.prototype.push.apply(message, string2bytes("SOME_UNIQUE_DATA"));
-
-            // var env = [browser.charCodeAt(0), os.charCodeAt(0)];
-            // Array.prototype.push.apply(message, env);
-
+            Array.prototype.push.apply(message, dataHash);
+            
+            //msg("additional data hash -> " + dataHash)
+            
+            //msg("full message -> " + message)
 
             // Command Options
             // optype
@@ -673,7 +685,7 @@ define(function(require, exports, module) {
             //#define NO_ENCRYPT_RESP 0
             //#define ENCRYPT_RESP 1
 
-            await ctaphid_via_webauthn(cmd, optype, keytype, enc_resp, encryptedkeyHandle, 6000).then(async(response) => {
+            await ctaphid_via_webauthn(cmd, optype, keytype, enc_resp, message, 6000).then(async(response) => {
 
                 if (!response) {
                     msg("Problem Derive Public Key on onlykey");
@@ -700,7 +712,7 @@ define(function(require, exports, module) {
 
                 $onStatus("OnlyKey Derive Public Key Completed ");
 
-
+                // Not sure why the pubkey is being hashed here? Doesn't look like this is used
                 var sha256Hash = await digestBuff(Uint8Array.from(sharedPub));
 
                 if (false && sharedPub.length == 65 && keytype == 1) {
@@ -784,7 +796,7 @@ define(function(require, exports, module) {
 
                 }
 
-                msg("sharedPub (" + sharedPub.length + ") => " + sharedPub);
+                //msg("sharedPub (" + sharedPub.length + ") => " + sharedPub);
                 // msg("sharedPub -> bytes2b64 => " + bytes2b64_B(sharedPub));
                 //msg("sharedPub -> sha256-hash => " + sha256Hash);
                 //msg("sharedPub -> buf2hex => " + buf2hex(sharedPub));
@@ -805,7 +817,7 @@ define(function(require, exports, module) {
 
     }
 
-    function onlykey_derive_shared_secret(pubkey, optional_d, keytype, enc_resp, cb) {
+    function onlykey_derive_shared_secret(pubkey, additional_d, keytype, enc_resp, cb) {
         var delay = 0;
         if (OKversion == 'Original') {
             delay = delay * 4;
@@ -817,19 +829,38 @@ define(function(require, exports, module) {
             $onStatus("Requesting OnlyKey Shared Secret");
 
             var cmd = OKCONNECT;
-
-            var message = [255, 255, 255, 255, OKCONNECT]; //Add header and message type
-            Array.prototype.push.apply(message, [0]);
-            if (!optional_d) {
-                optional_d = new Uint8Array(32); // all 0s
+            //Add header and message type
+            var message = [255, 255, 255, 255, OKCONNECT]; 
+            
+            //Add current epoch time
+            var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
+            var timePart = currentEpochTime.match(/.{2}/g).map(hexStrToDec);
+            Array.prototype.push.apply(message, timePart);
+            
+            //Add transit pubkey
+            appKey = nacl.box.keyPair();
+            Array.prototype.push.apply(message, appKey.publicKey);
+            
+            //Add Browser and OS codes
+            var env = [browser.charCodeAt(0), os.charCodeAt(0)];
+            Array.prototype.push.apply(message, env);
+            
+            //Add additional data for key derivation
+            if (!additional_d) {
+                // SHA256 hash of empty buffer
+                var dataHash = await digestArray(Uint8Array.from(new Uint8Array(32)));
+            } else {
+                // SHA256 hash of input data
+                var dataHash = await digestArray(Uint8Array.from(additional_d));
             }
-            // optional_d is optional data to include in key derivation, this must be 32 bytes
-            // TODO add checking, if not 32 bytes pad data with 0s
-            Array.prototype.push.apply(message, optional_d);
+            Array.prototype.push.apply(message, dataHash);
+            //msg("additional data hash -> " + dataHash)
+            
+            //Add input public key for shared secret computation 
             Array.prototype.push.apply(message, pubkey);
-            var encryptedkeyHandle = Uint8Array.from(message); // Not encrypted currently
-
-                msg("message -> " + encryptedkeyHandle)
+            //msg("input pubkey -> " + pubkey)
+            //msg("full message -> " + message)
+            
             // Command Options
             // optype
             // #define DERIVE_PUBLIC_KEY 1
@@ -844,7 +875,7 @@ define(function(require, exports, module) {
             //#define NO_ENCRYPT_RESP 0
             //#define ENCRYPT_RESP 1
 
-            await ctaphid_via_webauthn(cmd, optype, keytype, enc_resp, encryptedkeyHandle, 6000).then(async(response) => {
+            await ctaphid_via_webauthn(cmd, optype, keytype, enc_resp, message, 6000).then(async(response) => {
 
                 if (!response) {
                     msg("Problem getting Shared Secret");
@@ -858,11 +889,12 @@ define(function(require, exports, module) {
                 //sharedsec = nacl.box.before(Uint8Array.from(okPub), appKey.secretKey);
 
                 // Public ECC key will be an uncompressed ECC key, 65 bytes for P256, 32 bytes for NACL/CURVE25519 padded with 0s
+                var sharedPub;
                 if (keytype == 0 || keytype == 3) {
-                    var sharedPub = response.slice(response.length - 65, response.length - 33);
+                    sharedPub = response.slice(response.length - 65, response.length - 33);
                 }
                 else {
-                    var sharedPub = response.slice(response.length - 65, response.length);
+                    sharedPub = response.slice(response.length - 65, response.length);
                 }
                 //Private ECC key will be 32 bytes for all supported ECC key types
                 sharedsec = response.slice(response.length - 32, response.length);
@@ -874,13 +906,17 @@ define(function(require, exports, module) {
 
                 var sha256Hash = await digestBuff(Uint8Array.from(sharedsec));
 
+                var derivedKey = await window.crypto.subtle.importKey('raw', Uint8Array.from(sharedsec) ,{ name: 'AES-GCM', length: 256 }, true, [ 'encrypt', 'decrypt' ]);
+                var _k = await window.crypto.subtle.exportKey('jwk', derivedKey).then(({ k }) => k);
+
                 //sha256(sharedsec).then((key) => {
-                //msg("sharedsec (" + sharedsec.length + ") => " + sharedsec);
+                console.log("ONLYLEY derivedBits raw => " , Uint8Array.from(sharedsec));
+                console.log("derivedBits -> AES-GCM =", _k);
                 //msg("sharedsec -> bytes2b64 => " + bytes2b64_B(sharedsec));
-                msg("sharedsec -> sha256-hash => " + sha256Hash);
+                //msg("sharedsec -> sha256-hash => " + sha256Hash);
                 //});
 
-                if (typeof cb === 'function') cb(null, sha256Hash);
+                if (typeof cb === 'function') cb(null, _k);
 
             });
         }, (delay * 1000));
@@ -900,7 +936,13 @@ define(function(require, exports, module) {
             h++;
             publicKeyRawBuffer[h] = ydecoded[j];
         }
-
+        
+        if(publicKeyRawBuffer[0] == 0){
+            publicKeyRawBuffer = Array.from(publicKeyRawBuffer)
+            publicKeyRawBuffer.unshift()
+            publicKeyRawBuffer = Uint8Array.from(publicKeyRawBuffer);
+        }
+        console.log("epub to raw", ePub, publicKeyRawBuffer)
         if (callback)
             callback(publicKeyRawBuffer)
     }
@@ -910,10 +952,14 @@ define(function(require, exports, module) {
         //https://stackoverflow.com/questions/56846930/how-to-convert-raw-representations-of-ecdh-key-pair-into-a-json-web-key
 
         //
+        var orig_publicKeyRawBuffer = Uint8Array.from(publicKeyRawBuffer);
+        
+        //console.log("publicKeyRawBuffer  B", publicKeyRawBuffer)
         publicKeyRawBuffer = Array.from(publicKeyRawBuffer)
         publicKeyRawBuffer.unshift(publicKeyRawBuffer.pop());
         publicKeyRawBuffer = Uint8Array.from(publicKeyRawBuffer)
 
+        //console.log("publicKeyRawBuffer  F", publicKeyRawBuffer)
         var importedPubKey = await crypto.subtle.importKey(
             'jwk', {
                 kty: "EC",
@@ -934,11 +980,12 @@ define(function(require, exports, module) {
             .then(function(keydata) {
 
                 var OK_SEA_epub = keydata.x + '.' + keydata.y;
-
+                
+                console.log("raw to epub", OK_SEA_epub, orig_publicKeyRawBuffer)
+                
                 if (callback)
                     callback(OK_SEA_epub);
 
-                // EPUB_TO_ONLYKEY_ECDH_P256(OK_SEA_epub)
             })
             .catch(function(err) {
                 console.error(err);
