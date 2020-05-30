@@ -16,7 +16,7 @@ API
 ----
 
 ```js
-var ok = ok = onlykey(KEYTYPE , ENCRYPT_RESP);
+var ok = onlykey(KEYTYPE , ENCRYPT_RESP);
 ```
 `KEYTYPE`
 *   KEYTYPE_NACL = `0`
