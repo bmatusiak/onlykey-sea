@@ -3,7 +3,7 @@ http://onlykey.io/sea
 
 ------
 
-This is a 3rd Party API for OnlyKey
+This is a 3rd Party API for onlykey
 ---
 
 Supports
@@ -70,3 +70,9 @@ ok.derive_shared_secret(additional_d, jwk_epub, function(error, shared_secret) {
 *   `shared_secret`  = shared AES-GCM key
 
 
+
+
+API Authors
+-----------
+* Tim ~  onlykey.io
+* Brad ~  bmatusiak.us
