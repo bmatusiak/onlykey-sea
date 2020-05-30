@@ -3,7 +3,7 @@ http://onlykey.io/sea
 
 ------
 
-This is a 3rd Party API for onlykey
+This is a 3rd Party API for OnlyKey
 ---
 
 Supports
