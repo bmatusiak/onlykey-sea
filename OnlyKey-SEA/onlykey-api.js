@@ -1,11 +1,6 @@
 define(function(require, exports, module) {
     /* global $ TextEncoder */
     
-    // var elliptic = require('../libs/elliptic');
-    // var elliptic_curve25519 = new elliptic.ec("curve25519");
-    // var elliptic_secp256k1 = new elliptic.ec("secp256k1");
-    // var elliptic_p256 = new elliptic.ec("p256");
-
     var onConnection = null;
     var onStatus = null;
     var $onStatus = function(text) {
@@ -448,15 +443,16 @@ define(function(require, exports, module) {
     }
 
     //-------------------------------------------------------------
+
+    function hexStrToDec(hexStr) {
+        return ~~(new Number('0x' + hexStr).toString(10));
+    }
+
     function get_pin(byte) {
         if (byte < 6) return 1;
         else {
             return (byte % 5) + 1;
         }
-    }
-
-    function hexStrToDec(hexStr) {
-        return ~~(new Number('0x' + hexStr).toString(10));
     }
 
     var IntToByteArray = function(int) {
@@ -484,18 +480,39 @@ define(function(require, exports, module) {
     
     function hex_encode(byteArray) {
         return Array.prototype.map.call(byteArray, function(byte) {
-          return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+            return ('0' + (byte & 0xFF).toString(16)).slice(-2);
         }).join('');
-      }
-
-      function hex_decode(hexString) {
+    }
+    
+    function hex_decode(hexString) {
         var result = [];
         for (var i = 0; i < hexString.length; i += 2) {
-          result.push(parseInt(hexString.substr(i, 2), 16));
+            result.push(parseInt(hexString.substr(i, 2), 16));
         }
         return Uint8Array.from(result);
-      }
-      
+    }
+    
+    
+    function decode_key(b64_key){
+        var key = b64_key.split(".");
+        
+        if(key.length == 2){
+            return Uint8Array.from([].concat([0x04],arrayBufToBase64UrlDecode(key[0]),arrayBufToBase64UrlDecode(key[1])));
+        }else{
+            return arrayBufToBase64UrlDecode(b64_key);
+        }
+    }
+    
+    function encode_key(uint8array_key){
+        if(uint8array_key.length == 32){
+            return arrayBufToBase64UrlEncode(uint8array_key);
+        }else if(uint8array_key.length == 65){
+            if(uint8array_key[0] == 0x04)
+                return arrayBufToBase64UrlEncode(uint8array_key.slice(1, 33))+"."+arrayBufToBase64UrlEncode(uint8array_key.slice(33, 66));
+                
+        }
+        throw "Unknown Key Type to Encode";
+    }
       
     /**
      * Perform AES_256_GCM decryption using NACL shared secret
@@ -584,8 +601,9 @@ define(function(require, exports, module) {
     function msg(i) {
         htmlLog(i);
     }
-    var headermsg = msg;
-
+    // var headermsg = msg;
+    // var packetnum = 0;
+    
     var OKversion;
     var browser = "Chrome";
     var os = getOS();
@@ -593,20 +611,28 @@ define(function(require, exports, module) {
     var appKey;
     var okPub;
     var sharedsec;
-    var OKCONNECT = 228;
-
-    var packetnum = 0;
     
+    var OKCMD = {
+        OKCONNECT: 228
+    };
+
     var KEYTYPE = {
         NACL : 0,
         P256R1 : 1, //encrypt/decrypt
         P256K1 : 2, //sign/verify
         CURVE25519 : 3
-    }
+    };
+    
+    var KEYACTION = {
+        DERIVE_PUBLIC_KEY: 1,
+        DERIVE_SHARED_SECRET: 2,
+        DERIVE_PUBLIC_KEY_REQ_PRESS: 3,
+        DERIVE_SHARED_SECRET_REQ_PRESS: 4
+    };
 
-    function id(s) {
-        return document.getElementById(s);
-    }
+    // function id(s) {
+    //     return document.getElementById(s);
+    // }
 
     function onlykey_connect(enc_resp, cb) {
         var delay = 0;
@@ -616,9 +642,9 @@ define(function(require, exports, module) {
             msg("Requesting OnlyKey Secure Connection ("+getOS()+")");
             $onStatus("Requesting OnlyKey Secure Connection");
 
-            var cmd = OKCONNECT;
+            var cmd = OKCMD.OKCONNECT;
 
-            var message = [255, 255, 255, 255, OKCONNECT]; //Add header and message type
+            var message = [255, 255, 255, 255, OKCMD.OKCONNECT]; //Add header and message type
             var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
             var timePart = currentEpochTime.match(/.{2}/g).map(hexStrToDec);
             Array.prototype.push.apply(message, timePart);
@@ -678,9 +704,9 @@ define(function(require, exports, module) {
             msg("Requesting OnlyKey Derive Public Key");
             $onStatus("Requesting OnlyKey Derive Public Key");
             
-            var cmd = OKCONNECT;
+            var cmd = OKCMD.OKCONNECT;
             //Add header and message type
-            var message = [255, 255, 255, 255, OKCONNECT]; 
+            var message = [255, 255, 255, 255, OKCMD.OKCONNECT]; 
             
             //Add current epoch time
             var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
@@ -710,20 +736,9 @@ define(function(require, exports, module) {
             
             //msg("full message -> " + message)
 
-            // Command Options
-            // optype
-            // #define DERIVE_PUBLIC_KEY 1
-            // #define DERIVE_SHARED_SECRET 2
-            // #define DERIVE_PUBLIC_KEY_REQ_PRESS 3
-            // #define DERIVE_SHARED_SECRET_REQ_PRESS 4
-            var optype = 1;
-            // enc_resp
-            //#define NO_ENCRYPT_RESP 0
-            //#define ENCRYPT_RESP 1
+            var keyAction = KEYACTION.DERIVE_PUBLIC_KEY;
             
-            // enc_resp = 1;
-
-            await ctaphid_via_webauthn(cmd, optype, keytype, enc_resp, message, 6000).then(async(response) => {
+            await ctaphid_via_webauthn(cmd, keyAction, keytype, enc_resp, message, 6000).then(async(response) => {
 
                 if (!response) {
                     msg("Problem Derive Public Key on onlykey");
@@ -770,7 +785,7 @@ define(function(require, exports, module) {
                     })
                 }else if(keytype == KEYTYPE.CURVE25519 || keytype == KEYTYPE.NACL){//KEYTYPE_CURVE25519
                     // var eccKey_Pub = elliptic_curve25519.keyFromPublic(sharedPub).getPublic().encode("hex");
-                    if (typeof cb === 'function') cb(null, hex_encode(sharedPub));
+                    if (typeof cb === 'function') cb(null, encode_key(sharedPub));
                 }
 
             });
@@ -789,9 +804,9 @@ define(function(require, exports, module) {
             msg("Requesting OnlyKey Shared Secret");
             $onStatus("Requesting OnlyKey Shared Secret");
 
-            var cmd = OKCONNECT;
+            var cmd = OKCMD.OKCONNECT;
             //Add header and message type
-            var message = [255, 255, 255, 255, OKCONNECT]; 
+            var message = [255, 255, 255, 255, OKCMD.OKCONNECT]; 
             
             //Add current epoch time
             var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
@@ -826,13 +841,13 @@ define(function(require, exports, module) {
             // optype
             // #define DERIVE_PUBLIC_KEY 1
             // #define DERIVE_SHARED_SECRET 2
-            var optype = 2;
+            var keyAction = KEYACTION.DERIVE_SHARED_SECRET;
             // keytype
             // enc_resp
             //#define NO_ENCRYPT_RESP 0
             //#define ENCRYPT_RESP 1
 
-            await ctaphid_via_webauthn(cmd, optype, keytype, enc_resp, message, 6000).then(async(response) => {
+            await ctaphid_via_webauthn(cmd, keyAction, keytype, enc_resp, message, 6000).then(async(response) => {
 
                 if (!response) {
                     msg("Problem getting Shared Secret");
@@ -931,7 +946,6 @@ define(function(require, exports, module) {
             callback(publicKeyRawBuffer)
     }
 
-
     async function ONLYKEY_ECDH_P256_to_EPUB(publicKeyRawBuffer, callback) {
         //https://stackoverflow.com/questions/56846930/how-to-convert-raw-representations-of-ecdh-key-pair-into-a-json-web-key
 
@@ -1003,14 +1017,12 @@ define(function(require, exports, module) {
 
     }
     
-    
-    async function ECC_HEX_TO_ONLYKEY_RAW(ePub, callback){
-         
-    }
-    
     var connected = false;
     module.exports = {
         build_AESGCM:build_AESGCM,
+        decode_key:decode_key,
+        encode_key:encode_key,
+        sha256:sha256,
         connect: function(enc_resp, callback, _onStatus) {
             if (_onStatus)
                 onStatus = _onStatus;
@@ -1031,17 +1043,12 @@ define(function(require, exports, module) {
                         onlykey_derive_shared_secret(raw_pub_Key, AdditionalData, keytype, enc_resp, callback);
                     });
                 }else if(keytype == KEYTYPE.CURVE25519 || keytype == KEYTYPE.NACL){
-                    // ** this is unsuported in window.crypto (so use elliptic for now?)
-                    // https://github.com/tQsW/webcrypto-curve25519/blob/master/explainer.md  use this istead of elliptic when its advail !!
-                    var raw_pub_Key = hex_decode(pubkey);
+                    var raw_pub_Key = decode_key(pubkey);
                     onlykey_derive_shared_secret(raw_pub_Key, AdditionalData, keytype, enc_resp, callback);
                     
                 }
             }
-        },
-    
-        // bytes2b64: bytes2b64,
-        // b642bytes: b642bytes
+        }
     };
 
 

@@ -1,7 +1,7 @@
 <div>
 
     <strong id="connection_status" class="float-right"></strong>
-    <h1>Onlykey Encrypt and Decrypt: CURVE25519 (elliptic)</h1>
+    <h1>Onlykey Encrypt and Decrypt: CURVE25519 (nacl+SEA)</h1>
     <hr/>
     <div class="container">
         <div id="disconnected">
@@ -9,6 +9,8 @@
         </div>
         <div id="connected_onlykey" style="display:none;">
             
+            <label>Onlykey Additional Data:</label>
+            <input type="text" id="onlykey_additional_data" class="form-control" value="Onlykey Rocks!"/><br/>
             <button class="btn btn-danger" id="derive_public_key">Derive Public Key</button>
             <hr/>
             <label>Onlykey PubKey :</label>
@@ -18,7 +20,7 @@
                 <tr>
                     <td><label>Bob Test Key:</label></td>
                     <td>
-                        <textarea class="form-control" rows="5" id="sea_test_key">{"publicKey":"475f7176f88b49831b977a48efebae85b44a5c6e9c61e295835c8c37016b483c","secretKey":"079d3362431d133e3eb8f5cdff3a00f4c4d18b7913949a06fb5115f014a68a56"}</textarea>
+                        <textarea class="form-control" rows="5" id="sea_test_key">{"epub":"R19xdviLSYMbl3pI7-uuhbRKXG6cYeKVg1yMNwFrSDw","epriv":"B50zYkMdEz4-uPXN_zoA9MTRi3kTlJoG-1EV8BSmilY"}</textarea>
                     </td>
                 </tr>
                 <tr>

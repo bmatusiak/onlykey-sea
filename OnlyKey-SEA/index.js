@@ -21,15 +21,19 @@ define(function(require, exports, module) {
 
             console.log("onlykeyIndex");
             var onlykey = require("./onlykey-api.js");
-
+            
+            var pageLayout;
+            var keyType;
+            
+            var encResponce = (testType.split("-")[1] ? 1 : 0);
+            
             if (testType.split("-")[0] == "P256R1") {
 
-                var AdditionalData = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+                //var AdditionalData = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
 
-                var keyType = 1; //P256R1
-                var encResponce = (testType.split("-")[1] ? 1 : 0);
-
-                var pageLayout = $(require("text!./pageLayout_P256R1.html"));
+                keyType = 1; //P256R1
+            
+                pageLayout = $(require("text!./pageLayout_P256R1.html"));
 
                 pageLayout.find("#connect_onlykey").click(function() {
                     onlykey.connect(encResponce, async function() {
@@ -45,6 +49,7 @@ define(function(require, exports, module) {
 
 
                 pageLayout.find("#derive_public_key").click(function() {
+                    var AdditionalData = $("#onlykey_additional_data").val();
                     onlykey.derive_public_key(AdditionalData, keyType, encResponce, async function(err, key, keyString) {
                         if (err) console.log(err);
                         pageLayout.find("#onlykey_pubkey").val(key);
@@ -88,7 +93,8 @@ define(function(require, exports, module) {
                     var encData = pageLayout.find("#encryptData").val();
                     var encryptoToKey = pageLayout.find("#encryptKey").val(); //.split("")
                     //onlykey.b642bytes()
-
+                    
+                    var AdditionalData = $("#onlykey_additional_data").val();
                     onlykey.derive_shared_secret(AdditionalData, encryptoToKey, keyType, encResponce, async function(err, sharedSecret) {
                         if (err) console.log(err);
                         var enc = await GUN.SEA.encrypt(encData, sharedSecret);
@@ -105,7 +111,8 @@ define(function(require, exports, module) {
 
                     var decData = pageLayout.find("#decryptData").val();
                     var decryptoToKey = pageLayout.find("#decryptKey").val();
-
+                    
+                    var AdditionalData = $("#onlykey_additional_data").val();
                     onlykey.derive_shared_secret(AdditionalData, decryptoToKey, keyType, encResponce, async function(err, sharedSecret) {
                         if (err) console.log(err);
                         //var enc = await SEA.encrypt('shared data', await SEA.secret(bob.epub, alice));
@@ -133,28 +140,12 @@ define(function(require, exports, module) {
                 
                 
                 var nacl = require("nacl");
-                // var elliptic = require('../libs/elliptic');
-                // var elliptic_curve25519 = new elliptic.ec("curve25519");
 
-                // var hash = function(s) { return elliptic_curve25519.hash().update(s).digest() };
+                //var AdditionalData = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
 
-                // var genKey = function(s) { return elliptic_curve25519.keyFromPrivate(hash(s), "hex") };
+                keyType = 3; //CURVE25519
 
-                // function elliptic_curve25519_dervivePublic(data) {
-                //     return genKey(data).getPublic().encode();
-                // }
-
-                // function elliptic_curve25519_derviveShared(data, sharePub) {
-                //     return genKey(data).derive(elliptic_curve25519.keyFromPublic(sharePub).getPublic()).toArray();
-                // }
-
-
-                var AdditionalData = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-
-                var keyType = 3; //CURVE25519
-                var encResponce = (testType.split("-")[1] ? 1 : 0);
-
-                var pageLayout = $(require("text!./pageLayout_CURVE25519.html"));
+                pageLayout = $(require("text!./pageLayout_CURVE25519.html"));
 
                 pageLayout.find("#connect_onlykey").click(function() {
                     onlykey.connect(encResponce, async function() {
@@ -170,6 +161,7 @@ define(function(require, exports, module) {
 
 
                 pageLayout.find("#derive_public_key").click(function() {
+                    var AdditionalData = $("#onlykey_additional_data").val();
                     onlykey.derive_public_key(AdditionalData, keyType, encResponce, async function(err, OK_sharedPubKey, keyString) {
                         if (err) console.log(err);
                         pageLayout.find("#onlykey_pubkey").val(OK_sharedPubKey);
@@ -185,17 +177,19 @@ define(function(require, exports, module) {
                         //$("#encryptBTN").click();
 
                         (async function() {
-                            var ok_pubkey_decoded = hex_decode(OK_sharedPubKey);
+                            var ok_pubkey_decoded = onlykey.decode_key(OK_sharedPubKey);
                             
-                            var pair_bob = JSON.parse($("#sea_test_key").val())
-                            var bobPubKey = pair_bob.publicKey;//<-- hex encoded
-                            var bobPrivKey = pair_bob.secretKey;//<-- hex encoded
+                            var pair_bob = JSON.parse($("#sea_test_key").val());
+                            var bobPubKey = pair_bob.epub;//<-- hex encoded
+                            var bobPrivKey = pair_bob.epriv;//<-- hex encoded
                             
+                            var bobPubKey_decoded = onlykey.decode_key(bobPubKey);//<-- uint8array
+                            var bobPrivKey_decoded = onlykey.decode_key(bobPrivKey);//<-- uint8array
                             
-                            var bobPubKey_decoded = hex_decode(bobPubKey);//<-- uint8array
-                            var bobPrivKey_decoded = hex_decode(bobPrivKey);//<-- uint8array
+                            console.log("bob1",onlykey.encode_key(bobPubKey_decoded));
+                            console.log("bob2",onlykey.encode_key(bobPrivKey_decoded));
                             
-                            console.log("bobs_pair",pair_bob)
+                            console.log("bobs_pair",pair_bob);
                             
                             //nacl.scalarMult(bob priv key, sharedPub)
                             var ss = nacl.scalarMult(bobPrivKey_decoded, ok_pubkey_decoded);
@@ -205,8 +199,7 @@ define(function(require, exports, module) {
                             var Bob_generated_sharedSecret = await onlykey.build_AESGCM(ss);//hex_encode(ss);
                             
                             
-                            
-                            console.log("nacl:x25519 Bob_generated_sharedSecret", Bob_generated_sharedSecret)
+                            console.log("nacl:x25519 Bob_generated_sharedSecret", Bob_generated_sharedSecret);
                             $("#sea_test_shared_secret").val(Bob_generated_sharedSecret);
                             
                             onlykey.derive_shared_secret(AdditionalData, bobPubKey, keyType, encResponce, async function(err, sharedSecret) {
@@ -214,11 +207,11 @@ define(function(require, exports, module) {
                                 $("#ok_test_shared_secret").val(sharedSecret);
                             
                             
-                                console.log("elliptic_curve25519: bobPubKey: ", bobPubKey)
-                                console.log("elliptic_curve25519: Bob_generated_sharedSecret: ", Bob_generated_sharedSecret)
+                                console.log("elliptic_curve25519: bobPubKey: ", bobPubKey);
+                                console.log("elliptic_curve25519: Bob_generated_sharedSecret: ", Bob_generated_sharedSecret);
                             });
 
-                        })()
+                        })();
 
                     });
                 });
@@ -234,7 +227,7 @@ define(function(require, exports, module) {
                     var encData = pageLayout.find("#encryptData").val();
                     var encryptoToKey = pageLayout.find("#encryptKey").val(); //.split("")
                     //onlykey.b642bytes()
-
+                    var AdditionalData = $("#onlykey_additional_data").val();
                     onlykey.derive_shared_secret(AdditionalData, encryptoToKey, keyType, encResponce, async function(err, sharedSecret) {
                         if (err) console.log(err);
                         var enc = await GUN.SEA.encrypt(encData, sharedSecret);
@@ -251,7 +244,7 @@ define(function(require, exports, module) {
 
                     var decData = pageLayout.find("#decryptData").val();
                     var decryptoToKey = pageLayout.find("#decryptKey").val();
-
+                    var AdditionalData = $("#onlykey_additional_data").val();
                     onlykey.derive_shared_secret(AdditionalData, decryptoToKey, keyType, encResponce, async function(err, sharedSecret) {
                         if (err) console.log(err);
                         //var enc = await SEA.encrypt('shared data', await SEA.secret(bob.epub, alice));

@@ -67,9 +67,9 @@ define(function(require, exports, module) {
         }
 
         function derviveShared(data, sharePub) {
-          var x = nacl.box.before(decode(sharePub), genKey(data).secretKey);
+          // var x = nacl.box.before(decode(sharePub), genKey(data).secretKey);
           
-          // var x = nacl.scalarMult(decode(sharePub), genKey(data).secretKey);
+          var x = nacl.scalarMult(genKey(data).secretKey, decode(sharePub));
           
           return encode(x);
         }
