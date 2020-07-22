@@ -634,7 +634,7 @@ define(function(require, exports, module) {
     //     return document.getElementById(s);
     // }
 
-    function onlykey_connect(enc_resp, cb) {
+    function onlykey_connect(press_required_data, cb) {
         var delay = 0;
 
         setTimeout(async function() {
@@ -653,7 +653,8 @@ define(function(require, exports, module) {
             var env = [browser.charCodeAt(0), os.charCodeAt(0)];
             Array.prototype.push.apply(message, env);
             var encryptedkeyHandle = Uint8Array.from(message); // Not encrypted as this is the initial key exchange
-
+            
+            var enc_resp = 1;
             await ctaphid_via_webauthn(cmd, null, null, null, encryptedkeyHandle, 6000).then(async(response) => {
 
                 if (!response) {
@@ -696,7 +697,7 @@ define(function(require, exports, module) {
 
     }
 
-    function onlykey_derive_public_key(additional_d, keytype, enc_resp, cb) {
+    function onlykey_derive_public_key(additional_d, keytype, press_required_data, cb) {
         var delay = 0;
         
         setTimeout(async function() {
@@ -728,16 +729,20 @@ define(function(require, exports, module) {
                 dataHash = await digestArray(Uint8Array.from(new Uint8Array(32)));
             } else {
                 // SHA256 hash of input data
-                dataHash = await digestArray(Uint8Array.from(additional_d));
+                dataHash = await digestArray(Uint8Array.from(additional_d));//sha256 = 32 bytes
             }
             Array.prototype.push.apply(message, dataHash);
             
-            //msg("additional data hash -> " + dataHash)
             
-            //msg("full message -> " + message)
-
             var keyAction = KEYACTION.DERIVE_PUBLIC_KEY;
             
+            if(press_required_data.length > 0){
+                dataHash = await digestArray(Uint8Array.from(press_required_data));
+                Array.prototype.push.apply(message, dataHash);
+                keyAction = KEYACTION.DERIVE_PUBLIC_KEY_REQ_PRESS;
+            } 
+            
+            var enc_resp = 1;
             await ctaphid_via_webauthn(cmd, keyAction, keytype, enc_resp, message, 6000).then(async(response) => {
 
                 if (!response) {
@@ -793,7 +798,7 @@ define(function(require, exports, module) {
 
     }
 
-    function onlykey_derive_shared_secret(pubkey, additional_d, keytype, enc_resp, cb) {
+    function onlykey_derive_shared_secret(pubkey, additional_d, keytype, press_required_data, cb) {
         var delay = 0;
         if (OKversion == 'Original') {
             delay = delay * 4;
@@ -846,7 +851,7 @@ define(function(require, exports, module) {
             // enc_resp
             //#define NO_ENCRYPT_RESP 0
             //#define ENCRYPT_RESP 1
-
+            var enc_resp = 1;
             await ctaphid_via_webauthn(cmd, keyAction, keytype, enc_resp, message, 6000).then(async(response) => {
 
                 if (!response) {
@@ -1023,28 +1028,28 @@ define(function(require, exports, module) {
         decode_key:decode_key,
         encode_key:encode_key,
         sha256:sha256,
-        connect: function(enc_resp, callback, _onStatus) {
+        connect: function(press_required_data, callback, _onStatus) {
             if (_onStatus)
                 onStatus = _onStatus;
-            onlykey_connect(enc_resp, function(err) {
+            onlykey_connect(press_required_data, function(err) {
                 if (!err)
                     connected = true;
                 if (typeof callback === 'function') callback(err);
             });
         },
-        derive_public_key: function(AdditionalData, keytype, enc_resp,  callback) {
+        derive_public_key: function(AdditionalData, keytype, press_required_data,  callback) {
             if (connected)
-                onlykey_derive_public_key(AdditionalData, keytype, enc_resp, callback);
+                onlykey_derive_public_key(AdditionalData, keytype, press_required_data, callback);
         },
-        derive_shared_secret: function(AdditionalData, pubkey, keytype,enc_resp,   callback) {
+        derive_shared_secret: function(AdditionalData, pubkey, keytype,press_required_data,   callback) {
             if (connected) {
                 if(keytype == KEYTYPE.P256R1){
                     EPUB_TO_ONLYKEY_ECDH_P256(pubkey, function(raw_pub_Key) {
-                        onlykey_derive_shared_secret(raw_pub_Key, AdditionalData, keytype, enc_resp, callback);
+                        onlykey_derive_shared_secret(raw_pub_Key, AdditionalData, keytype, press_required_data, callback);
                     });
                 }else if(keytype == KEYTYPE.CURVE25519 || keytype == KEYTYPE.NACL){
                     var raw_pub_Key = decode_key(pubkey);
-                    onlykey_derive_shared_secret(raw_pub_Key, AdditionalData, keytype, enc_resp, callback);
+                    onlykey_derive_shared_secret(raw_pub_Key, AdditionalData, keytype, press_required_data, callback);
                     
                 }
             }
