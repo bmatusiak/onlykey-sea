@@ -1,5 +1,5 @@
 # onlykey-sea
-http://onlykey.io/sea
+Get a Key: http://onlykey.io/sea
 
 ------
 
