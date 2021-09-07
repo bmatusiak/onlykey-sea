@@ -16,26 +16,8 @@ API
 ----
 
 ```js
-var ok = onlykey(KEYTYPE , ENCRYPT_RESP);
+var ok = require("./onlykey-api.js");
 ```
-`KEYTYPE`
-*   KEYTYPE_NACL = `0`
-*   KEYTYPE_P256R1 = `1`
-*   KEYTYPE_P256K1 = `2`
-*   KEYTYPE_CURVE25519 = `3`
-
-`ENCRYPT_RESP`
-*   OFF = `0`
-*   ON  = `1`
-
-Methods
------
-
-```js
-ok.connect(function() {})
-```
-_connect sets onlykey time_
-
 
 
 Events
@@ -52,23 +34,30 @@ List of events
 * `"debug"`   outpus any debug and status in english, _like `status` but more details_
 
 
-ECDH 
+Methods
 -----
 
-__KEYTYPE_P256R1 = `1`__
-
-After `connect`, 2 methods are added to `ok`
+```js
+ok.connect(function() {})
+```
+_connect sets onlykey time_
 
 
 ```js
-ok.derive_public_key(additional_d, function(error, jwk_epub) {})
-ok.derive_shared_secret(additional_d, jwk_epub, function(error, shared_secret) {})
+ok.derive_public_key(AdditionalData, keyType, press_required, function(error, jwk_epub) {})
+ok.derive_shared_secret(AdditionalData, jwk_epub, keyType, press_required, function(error, shared_secret) {})
 ```
 
 *   `additional_d` = `string` or `buffer` to point to a derived key
 *   `jwk_epub` = public key in jwk format
+*   `keyType` = public key in jwk format
 *   `shared_secret`  = shared AES-GCM key
 
+`KEYTYPE`
+*   KEYTYPE_NACL = `0`
+*   KEYTYPE_P256R1 = `1`
+*   KEYTYPE_P256K1 = `2`
+*   KEYTYPE_CURVE25519 = `3`
 
 
 

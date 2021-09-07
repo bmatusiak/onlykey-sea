@@ -88,8 +88,8 @@ define(function(require, exports, module) {
         return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
     }
 
-    var appId = window.location.origin;
-    var encrypted_data;
+    // var appId = window.location.origin;
+    // var encrypted_data;
 
     function _setStatus(newStatus) {
         window._status = newStatus;
@@ -469,7 +469,7 @@ define(function(require, exports, module) {
         return byteArray;
     };
 
-    let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+    // let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
     function string2bytes(s) {
         var len = s.length;
