@@ -6,7 +6,7 @@ define(function(require, exports, module) {
       var key2Name = "BOB";
 
       //  "hex" or "base64",  default is raw(Uint8Array)
-      var encoding = "hex";
+      var encoding = "base64";
 
       ////-----------------------
       

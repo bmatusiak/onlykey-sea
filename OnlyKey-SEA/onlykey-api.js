@@ -634,7 +634,7 @@ define(function(require, exports, module) {
     //     return document.getElementById(s);
     // }
 
-    function onlykey_connect(press_required_data, cb) {
+    function onlykey_connect(cb) {
         var delay = 0;
 
         setTimeout(async function() {
@@ -1014,28 +1014,38 @@ define(function(require, exports, module) {
         decode_key:decode_key,
         encode_key:encode_key,
         sha256:sha256,
-        connect: function(press_required_data, callback, _onStatus) {
+        util:{
+            sha256:sha256,
+            build_AESGCM:build_AESGCM,
+            decode_key:decode_key,
+            encode_key:encode_key,
+            base64_encode:bytes2b64,
+            base64_decode:b642bytes,
+            hex_encode:hex_encode,
+            hex_decode:hex_decode
+        },
+        connect: function(callback, _onStatus) {
             if (_onStatus)
                 onStatus = _onStatus;
-            onlykey_connect(press_required_data, function(err) {
+            onlykey_connect(function(err) {
                 if (!err)
                     connected = true;
                 if (typeof callback === 'function') callback(err);
             });
         },
-        derive_public_key: function(AdditionalData, keytype, press_required_data,  callback) {
+        derive_public_key: function(AdditionalData, keytype, press_required,  callback) {
             if (connected)
-                onlykey_derive_public_key(AdditionalData, keytype, press_required_data, callback);
+                onlykey_derive_public_key(AdditionalData, keytype, press_required, callback);
         },
-        derive_shared_secret: function(AdditionalData, pubkey, keytype,press_required_data,   callback) {
+        derive_shared_secret: function(AdditionalData, pubkey, keytype,press_required,   callback) {
             if (connected) {
                 if(keytype == KEYTYPE.P256R1){
                     EPUB_TO_ONLYKEY_ECDH_P256(pubkey, function(raw_pub_Key) {
-                        onlykey_derive_shared_secret(raw_pub_Key, AdditionalData, keytype, press_required_data, callback);
+                        onlykey_derive_shared_secret(raw_pub_Key, AdditionalData, keytype, press_required, callback);
                     });
                 }else if(keytype == KEYTYPE.CURVE25519 || keytype == KEYTYPE.NACL){
                     var raw_pub_Key = decode_key(pubkey);
-                    onlykey_derive_shared_secret(raw_pub_Key, AdditionalData, keytype, press_required_data, callback);
+                    onlykey_derive_shared_secret(raw_pub_Key, AdditionalData, keytype, press_required, callback);
                     
                 }
             }
