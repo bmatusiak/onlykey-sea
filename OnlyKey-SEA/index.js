@@ -24,8 +24,6 @@ define(function(require, exports, module) {
             
             var nacl = require("nacl");
             
-            var elliptic = require("elliptic");
-            
             var pageLayout;
             var keyType;
             
@@ -134,10 +132,10 @@ define(function(require, exports, module) {
                 // })()
             }
 
-
+            /*  
             if (testType == "NACL.js") {
                 require("./test_nacl.js").start(testType)
-            }
+            }*/
 
             if (testType.split("-")[0] == "CURVE25519") {
                 keyType = 3; //CURVE25519
