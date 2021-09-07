@@ -697,7 +697,7 @@ define(function(require, exports, module) {
 
     }
 
-    function onlykey_derive_public_key(additional_d, keytype, press_required_data, cb) {
+    function onlykey_derive_public_key(additional_d, keytype, press_required, cb) {
         var delay = 0;
         
         setTimeout(async function() {
@@ -733,14 +733,7 @@ define(function(require, exports, module) {
             }
             Array.prototype.push.apply(message, dataHash);
             
-            
-            var keyAction = KEYACTION.DERIVE_PUBLIC_KEY;
-            
-            if(press_required_data.length > 0){
-                dataHash = await digestArray(Uint8Array.from(press_required_data));
-                Array.prototype.push.apply(message, dataHash);
-                keyAction = KEYACTION.DERIVE_PUBLIC_KEY_REQ_PRESS;
-            } 
+            var keyAction = press_required ? KEYACTION.DERIVE_PUBLIC_KEY_REQ_PRESS : KEYACTION.DERIVE_PUBLIC_KEY;
             
             var enc_resp = 1;
             await ctaphid_via_webauthn(cmd, keyAction, keytype, enc_resp, message, 6000).then(async(response) => {
@@ -798,7 +791,7 @@ define(function(require, exports, module) {
 
     }
 
-    function onlykey_derive_shared_secret(pubkey, additional_d, keytype, press_required_data, cb) {
+    function onlykey_derive_shared_secret(pubkey, additional_d, keytype, press_required, cb) {
         var delay = 0;
         if (OKversion == 'Original') {
             delay = delay * 4;
@@ -842,15 +835,8 @@ define(function(require, exports, module) {
             //msg("input pubkey -> " + pubkey)
             //msg("full message -> " + message)
             
-            // Command Options
-            // optype
-            // #define DERIVE_PUBLIC_KEY 1
-            // #define DERIVE_SHARED_SECRET 2
-            var keyAction = KEYACTION.DERIVE_SHARED_SECRET;
-            // keytype
-            // enc_resp
-            //#define NO_ENCRYPT_RESP 0
-            //#define ENCRYPT_RESP 1
+            var keyAction = press_required ? KEYACTION.DERIVE_SHARED_SECRET_REQ_PRESS : KEYACTION.DERIVE_SHARED_SECRET;
+           
             var enc_resp = 1;
             await ctaphid_via_webauthn(cmd, keyAction, keytype, enc_resp, message, 6000).then(async(response) => {
 

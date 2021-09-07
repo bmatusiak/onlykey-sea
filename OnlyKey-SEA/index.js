@@ -25,13 +25,8 @@ define(function(require, exports, module) {
             var pageLayout;
             var keyType;
             
-            var press_required_data = (testType.split("-")[1] ? 1 : 0);
+            var press_required = (testType.split("-")[1] ? true : false);
             
-            if(press_required_data == 1){
-                press_required_data = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1];
-            }else{
-                press_required_data = [];
-            }
             
             if (testType.split("-")[0] == "P256R1") {
 
@@ -40,7 +35,7 @@ define(function(require, exports, module) {
                 pageLayout = $(require("text!./pageLayout_P256R1.html"));
 
                 pageLayout.find("#connect_onlykey").click(function() {
-                    onlykey.connect(press_required_data, async function() {
+                    onlykey.connect(press_required, async function() {
                         console.log("onlykey has connected");
                         pageLayout.find("#connect_onlykey").hide();
                         pageLayout.find("#connected_onlykey").show();
@@ -54,7 +49,7 @@ define(function(require, exports, module) {
 
                 pageLayout.find("#derive_public_key").click(function() {
                     var AdditionalData = $("#onlykey_additional_data").val();
-                    onlykey.derive_public_key(AdditionalData, keyType, press_required_data, async function(err, key, keyString) {
+                    onlykey.derive_public_key(AdditionalData, keyType, press_required, async function(err, key, keyString) {
                         if (err) console.log(err);
                         pageLayout.find("#onlykey_pubkey").val(key);
 
@@ -76,7 +71,7 @@ define(function(require, exports, module) {
                             $("#sea_test_shared_secret").val(sharedSecret);
 
 
-                            onlykey.derive_shared_secret(AdditionalData, JSON.parse($("#sea_test_key").val()).epub, keyType, press_required_data, async function(err, sharedSecret) {
+                            onlykey.derive_shared_secret(AdditionalData, JSON.parse($("#sea_test_key").val()).epub, keyType, press_required, async function(err, sharedSecret) {
                                 if (err) console.log(err);
                                 $("#ok_test_shared_secret").val(sharedSecret);
                             });
@@ -99,7 +94,7 @@ define(function(require, exports, module) {
                     //onlykey.b642bytes()
                     
                     var AdditionalData = $("#onlykey_additional_data").val();
-                    onlykey.derive_shared_secret(AdditionalData, encryptoToKey, keyType, press_required_data, async function(err, sharedSecret) {
+                    onlykey.derive_shared_secret(AdditionalData, encryptoToKey, keyType, press_required, async function(err, sharedSecret) {
                         if (err) console.log(err);
                         var enc = await GUN.SEA.encrypt(encData, sharedSecret);
 
@@ -117,7 +112,7 @@ define(function(require, exports, module) {
                     var decryptoToKey = pageLayout.find("#decryptKey").val();
                     
                     var AdditionalData = $("#onlykey_additional_data").val();
-                    onlykey.derive_shared_secret(AdditionalData, decryptoToKey, keyType, press_required_data, async function(err, sharedSecret) {
+                    onlykey.derive_shared_secret(AdditionalData, decryptoToKey, keyType, press_required, async function(err, sharedSecret) {
                         if (err) console.log(err);
                         //var enc = await SEA.encrypt('shared data', await SEA.secret(bob.epub, alice));
 
@@ -150,7 +145,7 @@ define(function(require, exports, module) {
                 pageLayout = $(require("text!./pageLayout_CURVE25519.html"));
 
                 pageLayout.find("#connect_onlykey").click(function() {
-                    onlykey.connect(press_required_data, async function() {
+                    onlykey.connect(press_required, async function() {
                         console.log("onlykey has connected");
                         pageLayout.find("#connect_onlykey").hide();
                         pageLayout.find("#connected_onlykey").show();
@@ -164,7 +159,7 @@ define(function(require, exports, module) {
 
                 pageLayout.find("#derive_public_key").click(function() {
                     var AdditionalData = $("#onlykey_additional_data").val();
-                    onlykey.derive_public_key(AdditionalData, keyType, press_required_data, async function(err, OK_sharedPubKey, keyString) {
+                    onlykey.derive_public_key(AdditionalData, keyType, press_required, async function(err, OK_sharedPubKey, keyString) {
                         if (err) console.log(err);
                         pageLayout.find("#onlykey_pubkey").val(OK_sharedPubKey);
 
@@ -204,7 +199,7 @@ define(function(require, exports, module) {
                             console.log("nacl:x25519 Bob_generated_sharedSecret", Bob_generated_sharedSecret);
                             $("#sea_test_shared_secret").val(Bob_generated_sharedSecret);
                             
-                            onlykey.derive_shared_secret(AdditionalData, bobPubKey, keyType, press_required_data, async function(err, sharedSecret) {
+                            onlykey.derive_shared_secret(AdditionalData, bobPubKey, keyType, press_required, async function(err, sharedSecret) {
                                 if (err) console.log(err);
                                 $("#ok_test_shared_secret").val(sharedSecret);
                             
@@ -230,7 +225,7 @@ define(function(require, exports, module) {
                     var encryptoToKey = pageLayout.find("#encryptKey").val(); //.split("")
                     //onlykey.b642bytes()
                     var AdditionalData = $("#onlykey_additional_data").val();
-                    onlykey.derive_shared_secret(AdditionalData, encryptoToKey, keyType, press_required_data, async function(err, sharedSecret) {
+                    onlykey.derive_shared_secret(AdditionalData, encryptoToKey, keyType, press_required, async function(err, sharedSecret) {
                         if (err) console.log(err);
                         var enc = await GUN.SEA.encrypt(encData, sharedSecret);
 
@@ -247,7 +242,7 @@ define(function(require, exports, module) {
                     var decData = pageLayout.find("#decryptData").val();
                     var decryptoToKey = pageLayout.find("#decryptKey").val();
                     var AdditionalData = $("#onlykey_additional_data").val();
-                    onlykey.derive_shared_secret(AdditionalData, decryptoToKey, keyType, press_required_data, async function(err, sharedSecret) {
+                    onlykey.derive_shared_secret(AdditionalData, decryptoToKey, keyType, press_required, async function(err, sharedSecret) {
                         if (err) console.log(err);
                         //var enc = await SEA.encrypt('shared data', await SEA.secret(bob.epub, alice));
 
