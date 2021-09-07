@@ -50,7 +50,7 @@ ok.derive_shared_secret(AdditionalData, jwk_epub, keyType, press_required, funct
 
 *   `additional_d` = `string` or `buffer` to point to a derived key
 *   `jwk_epub` = public key in jwk format
-*   `keyType` = public key in jwk format
+*   `keyType` = key generation type
 *   `shared_secret`  = shared AES-GCM key
 
 `KEYTYPE`
